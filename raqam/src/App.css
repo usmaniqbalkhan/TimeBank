@@ -1,0 +1,4 @@
+/* App.css is largely unneeded as index.css manages the wrapper / view port. */
+.page-container {
+  padding: 24px;
+}
