@@ -857,16 +857,114 @@ input, textarea { font-family: inherit; }
 .tb-stat__link:hover { color: var(--tb-violet); }
 
 /* Chart card */
-.tb-chart-card { padding: 18px 18px 16px; }
+.tb-chart-card {
+  padding: 18px 18px 16px;
+  overflow: visible; /* tooltip + pulsing end-dot need to extend past the card */
+}
+
+/* Live indicator pill in the chart head */
+.tb-chart-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--tb-green-soft);
+  color: var(--tb-green-deep);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tb-chart-live__dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--tb-green);
+  box-shadow: 0 0 0 0 rgba(25, 192, 142, 0.4);
+  animation: tb-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes tb-live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(25,192,142,0.5); transform: scale(1); }
+  50% { box-shadow: 0 0 0 6px rgba(25,192,142,0); transform: scale(1.15); }
+}
+
+/* Sparkline */
+.tb-sparkline {
+  position: relative;
+  width: 100%;
+  /* Reserve room above for the pulsing end-dot to avoid being clipped */
+  margin-top: 4px;
+}
+.tb-sparkline__line { stroke-dasharray: 1200; stroke-dashoffset: 0; }
+.tb-sparkline__draw .tb-sparkline__line {
+  animation: tb-spark-draw 900ms var(--tb-ease) both;
+}
+.tb-sparkline__draw .tb-sparkline__area {
+  animation: tb-spark-fade 900ms var(--tb-ease) both;
+  transform-origin: center bottom;
+}
+@keyframes tb-spark-draw {
+  0% { stroke-dasharray: 1200; stroke-dashoffset: 1200; }
+  100% { stroke-dasharray: 1200; stroke-dashoffset: 0; }
+}
+@keyframes tb-spark-fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Hover tooltip */
+.tb-sparkline__tip {
+  position: absolute;
+  transform: translateX(-50%);
+  background: var(--tb-ink);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px -8px rgba(10,10,12,0.35);
+  z-index: 4;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.tb-sparkline__tip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--tb-ink);
+}
+.tb-sparkline__tip-amt {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.tb-sparkline__tip-day {
+  margin-top: 2px;
+  font-size: 10px;
+  opacity: 0.65;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Day labels — match the chart's PX padding so they line up under the
+   evenly-spaced data points instead of hugging the card edges */
 .tb-chart-labels {
   display: flex;
   justify-content: space-between;
-  margin-top: 8px;
+  margin: 8px 14px 0;
   font-size: 11px;
   font-weight: 600;
   color: var(--tb-muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+.tb-chart-labels span {
+  flex: 0 0 auto;
+  text-align: center;
+  min-width: 0;
 }
 
 /* Send Money widget — desktop sidebar only */

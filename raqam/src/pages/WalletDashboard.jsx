@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { formatTimestamp, getInitials } from '../lib/formatters';
@@ -79,27 +79,121 @@ function computeOverview(transactions) {
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function Sparkline({ data }) {
-  const max = Math.max(...data.map((d) => Math.abs(d.net)), 1);
-  const W = 320, H = 100, P = 6;
-  const xs = data.map((_, i) => P + (i / (data.length - 1)) * (W - 2 * P));
-  const ys = data.map((d) => H / 2 - (d.net / max) * (H / 2 - P));
+  const containerRef = useRef(null);
+  const [width, setWidth] = useState(320);
+  const [hover, setHover] = useState(null);
+  const [tickKey, setTickKey] = useState(0);
+
+  // Measure the container so the SVG renders at true pixel size — no
+  // preserveAspectRatio="none" stretching distorting the end-dot circle.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = Math.max(180, Math.floor(el.getBoundingClientRect().width));
+      setWidth(w);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Re-trigger the line draw-on animation whenever data changes (live updates).
+  const dataKey = data.map((d) => d.net).join('|');
+  useEffect(() => { setTickKey((k) => k + 1); }, [dataKey]);
+
+  const W = width;
+  const H = 130;
+  const PX = 14, PY = 22;
+  const innerW = W - 2 * PX;
+  const innerH = H - 2 * PY;
+  const maxAbs = Math.max(...data.map((d) => Math.abs(d.net)), 1);
+
+  const xs = data.map((_, i) => PX + (i / (data.length - 1)) * innerW);
+  const ys = data.map((d) => PY + innerH / 2 - (d.net / maxAbs) * (innerH / 2 - 2));
+
   const linePath = xs.map((x, i) => `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${ys[i].toFixed(1)}`).join(' ');
-  const areaPath = `${linePath} L ${(W - P).toFixed(1)} ${H} L ${P} ${H} Z`;
+  const baselineY = (PY + innerH / 2).toFixed(1);
+  const areaPath = `${linePath} L ${(W - PX).toFixed(1)} ${baselineY} L ${PX.toFixed(1)} ${baselineY} Z`;
+  const lastIdx = xs.length - 1;
+  const slotW = innerW / Math.max(1, data.length - 1);
+
+  const formatTick = (paisa) => {
+    const r = Math.round(Math.abs(paisa) / 100);
+    return new Intl.NumberFormat('en-PK').format(r);
+  };
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={120} preserveAspectRatio="none" style={{ display: 'block' }}>
-      <defs>
-        <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#6f3ff5" stopOpacity="0.32" />
-          <stop offset="100%" stopColor="#6f3ff5" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <line x1="0" y1={H / 2} x2={W} y2={H / 2} stroke="rgba(10,10,12,0.06)" strokeDasharray="3 4" />
-      <path d={areaPath} fill="url(#sparkGrad)" />
-      <path d={linePath} fill="none" stroke="#6f3ff5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r="4" fill="#6f3ff5" />
-      <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r="8" fill="#6f3ff5" fillOpacity="0.18" />
-    </svg>
+    <div ref={containerRef} className="tb-sparkline">
+      <svg
+        width={W} height={H} viewBox={`0 0 ${W} ${H}`}
+        style={{ display: 'block', overflow: 'visible' }}
+        onMouseLeave={() => setHover(null)}
+      >
+        <defs>
+          <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6f3ff5" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="#6f3ff5" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* dashed baseline */}
+        <line x1={PX} y1={baselineY} x2={W - PX} y2={baselineY} stroke="rgba(10,10,12,0.08)" strokeDasharray="3 4" />
+
+        {/* area + line — re-keyed on data change so the draw-on animation replays */}
+        <g key={tickKey} className="tb-sparkline__draw">
+          <path d={areaPath} fill="url(#sparkGrad)" className="tb-sparkline__area" />
+          <path d={linePath} fill="none" stroke="#6f3ff5" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="tb-sparkline__line" />
+        </g>
+
+        {/* live pulse on most recent point */}
+        <circle cx={xs[lastIdx]} cy={ys[lastIdx]} r="6" fill="#6f3ff5" fillOpacity="0.28">
+          <animate attributeName="r" values="6;14;6" dur="2.4s" repeatCount="indefinite" />
+          <animate attributeName="fill-opacity" values="0.32;0.04;0.32" dur="2.4s" repeatCount="indefinite" />
+        </circle>
+        <circle cx={xs[lastIdx]} cy={ys[lastIdx]} r="4" fill="#6f3ff5" />
+
+        {/* hover dot */}
+        {hover !== null && hover !== lastIdx ? (
+          <>
+            <line x1={xs[hover]} y1={PY} x2={xs[hover]} y2={H - PY} stroke="rgba(111,63,245,0.25)" strokeDasharray="2 3" />
+            <circle cx={xs[hover]} cy={ys[hover]} r="4.5" fill="#fff" stroke="#6f3ff5" strokeWidth="1.8" />
+          </>
+        ) : null}
+
+        {/* invisible per-day hit areas */}
+        {xs.map((x, i) => (
+          <rect
+            key={i}
+            x={x - slotW / 2}
+            y={0}
+            width={slotW}
+            height={H}
+            fill="transparent"
+            onMouseEnter={() => setHover(i)}
+            style={{ cursor: 'pointer' }}
+          />
+        ))}
+      </svg>
+
+      {hover !== null ? (
+        <div
+          className="tb-sparkline__tip"
+          style={{
+            left: `${(xs[hover] / W) * 100}%`,
+            top: Math.max(2, ys[hover] - 38),
+          }}
+        >
+          <div className="tb-sparkline__tip-amt">
+            {data[hover].net >= 0 ? '+' : '−'}PKR {formatTick(data[hover].net)}
+          </div>
+          <div className="tb-sparkline__tip-day">
+            {data[hover].date.toLocaleDateString('en-PK', { weekday: 'short', month: 'short', day: 'numeric' })}
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -382,9 +476,10 @@ export default function WalletDashboard() {
         {/* Activity chart */}
         <div className="tb-list-card tb-chart-card">
           <div className="tb-list-head">
-            <span>Last 7 days</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--tb-violet-deep)' }}>
-              {I.zap()} live
+            <span>Last 7 days · net flow</span>
+            <span className="tb-chart-live">
+              <span className="tb-chart-live__dot" />
+              Live
             </span>
           </div>
           <Sparkline data={stats.days} />
