@@ -10,6 +10,99 @@ function formatPaisaSplit(paisa) {
   return new Intl.NumberFormat('en-PK').format(rupees);
 }
 
+function timeOfDayGreeting() {
+  const h = new Date().getHours();
+  if (h < 5) return { text: 'Still up', emoji: '🌙' };
+  if (h < 12) return { text: 'Good morning', emoji: '☀️' };
+  if (h < 17) return { text: 'Good afternoon', emoji: '👋' };
+  return { text: 'Good evening', emoji: '🌆' };
+}
+
+const AVATAR_VARIANTS = ['tb-avatar--violet', 'tb-avatar--amber', 'tb-avatar--green', 'tb-avatar--red'];
+function avatarFor(seed = '') {
+  const sum = String(seed).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  return AVATAR_VARIANTS[sum % AVATAR_VARIANTS.length];
+}
+
+function computeOverview(transactions) {
+  let inP = 0, outP = 0, inCount = 0, outCount = 0;
+  const counts = {};
+  const byDay = new Map();
+
+  for (const tx of transactions) {
+    const amt = Number(tx.amount_paisa || 0);
+    if (tx.direction === 'credit') { inP += amt; inCount += 1; }
+    else { outP += amt; outCount += 1; }
+
+    const cp = tx.counterpart_name || `Code ${tx.counterpart_wallet_code}`;
+    counts[cp] = (counts[cp] || 0) + 1;
+
+    const day = new Date(tx.created_at).toISOString().slice(0, 10);
+    byDay.set(day, (byDay.get(day) || 0) + (tx.direction === 'credit' ? amt : -amt));
+  }
+
+  // Last 7 days for the chart
+  const days = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days.push({ date: d, net: byDay.get(key) || 0 });
+  }
+
+  const sortedContacts = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const top = sortedContacts[0];
+
+  // Recent unique counterparts (last 5)
+  const recentUnique = [];
+  const seen = new Set();
+  for (const tx of transactions) {
+    const code = tx.counterpart_wallet_code;
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    recentUnique.push({ code, name: tx.counterpart_name || `Code ${code}` });
+    if (recentUnique.length >= 5) break;
+  }
+
+  return {
+    moneyIn: inP, moneyOut: outP,
+    inCount, outCount,
+    txCount: transactions.length,
+    avgPaisa: transactions.length ? Math.round((inP + outP) / transactions.length) : 0,
+    topContact: top ? top[0] : null,
+    topContactCount: top ? top[1] : 0,
+    days, recentUnique,
+  };
+}
+
+const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function Sparkline({ data }) {
+  const max = Math.max(...data.map((d) => Math.abs(d.net)), 1);
+  const W = 320, H = 100, P = 6;
+  const xs = data.map((_, i) => P + (i / (data.length - 1)) * (W - 2 * P));
+  const ys = data.map((d) => H / 2 - (d.net / max) * (H / 2 - P));
+  const linePath = xs.map((x, i) => `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${ys[i].toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L ${(W - P).toFixed(1)} ${H} L ${P} ${H} Z`;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={120} preserveAspectRatio="none" style={{ display: 'block' }}>
+      <defs>
+        <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#6f3ff5" stopOpacity="0.32" />
+          <stop offset="100%" stopColor="#6f3ff5" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <line x1="0" y1={H / 2} x2={W} y2={H / 2} stroke="rgba(10,10,12,0.06)" strokeDasharray="3 4" />
+      <path d={areaPath} fill="url(#sparkGrad)" />
+      <path d={linePath} fill="none" stroke="#6f3ff5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r="4" fill="#6f3ff5" />
+      <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r="8" fill="#6f3ff5" fillOpacity="0.18" />
+    </svg>
+  );
+}
+
 export default function WalletDashboard() {
   const { profile, session, logout } = useAuth();
   const location = useLocation();
@@ -21,6 +114,7 @@ export default function WalletDashboard() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -60,6 +154,9 @@ export default function WalletDashboard() {
   const userName = dashboard?.profile?.name || profile?.name || 'Student';
   const userEmail = dashboard?.profile?.email || profile?.email || '';
   const firstName = userName.split(' ')[0];
+
+  const stats = computeOverview(recentTransactions);
+  const greet = timeOfDayGreeting();
 
 
   return (
@@ -108,24 +205,81 @@ export default function WalletDashboard() {
             <span className="tb-wallet-sidebar__icon">{I.lock({ width: 18, height: 18 })}</span>
             {loggingOut ? 'Signing out…' : 'Sign out'}
           </button>
+
+          {/* Send Money widget — recent contacts */}
+          {stats.recentUnique.length > 0 ? (
+            <div className="tb-send-widget">
+              <div className="tb-send-widget__title">
+                <span className="tb-send-widget__sticker">✨</span>
+                Send Money
+              </div>
+              <div className="tb-send-widget__avatars">
+                {stats.recentUnique.slice(0, 4).map((c) => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    title={`Send to ${c.name}`}
+                    onClick={() => navigate(`/send?recipient=${c.code}`)}
+                    className={'tb-avatar ' + avatarFor(c.code)}
+                    style={{ width: 38, height: 38, flex: '0 0 38px', fontSize: 13, marginLeft: -8, border: '2px solid #fff', cursor: 'pointer' }}
+                  >
+                    {getInitials(c.name) || '?'}
+                  </button>
+                ))}
+              </div>
+              <div className="tb-send-widget__name">{stats.recentUnique[0].name}</div>
+              <div className="tb-send-widget__sub">Tap an avatar or pick from list</div>
+              <button
+                type="button"
+                className="tb-btn tb-btn--violet"
+                onClick={() => navigate('/send')}
+                style={{ height: 44, fontSize: 14 }}
+              >
+                Next step {I.arrowRight({ width: 14, height: 14 })}
+              </button>
+            </div>
+          ) : null}
         </aside>
 
         <main className="tb-wallet-main" style={{ flex: 1, padding: '8px 18px 0', display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
 
-        {/* Top bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 2px' }}>
+        {/* Mobile top bar — hidden on desktop (sidebar handles it) */}
+        <div className="tb-wallet-mobile-topbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 2px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div className="tb-avatar tb-avatar--violet" style={{ width: 42, height: 42, flex: '0 0 42px', fontSize: 14 }}>
               {getInitials(userName) || 'TB'}
             </div>
             <div>
-              <div style={{ fontSize: 12, color: 'var(--tb-muted)' }}>Hi there,</div>
+              <div style={{ fontSize: 12, color: 'var(--tb-muted)' }}>{greet.text},</div>
               <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>{firstName}</div>
             </div>
           </div>
           <button className="tb-back" type="button" onClick={() => setNotifOpen(true)} title="Notifications" aria-label="Notifications">
             {I.bell()}
           </button>
+        </div>
+
+        {/* Greeting hero — visible on desktop only */}
+        <div className="tb-overview-hero">
+          <div>
+            <div className="tb-overview-hero__greet">
+              <span className="tb-overview-hero__sticker" aria-hidden="true">{greet.emoji}</span>
+              <span>{greet.text}, <strong>{firstName}</strong></span>
+            </div>
+            <h1 className="tb-overview-hero__title">Overview</h1>
+            <p className="tb-overview-hero__sub">Here's what's happening with your wallet today.</p>
+          </div>
+          <div className="tb-overview-hero__chips">
+            <button type="button" className="tb-chip tb-chip--violet" onClick={() => navigate('/send')}>
+              {I.arrowUp()} Send
+            </button>
+            <button type="button" className="tb-chip" onClick={() => navigate('/receive')}>
+              {I.arrowDown({ width: 14, height: 14 })} Receive
+            </button>
+            <button type="button" className="tb-chip" onClick={() => setNotifOpen(true)} aria-label="Notifications">
+              {I.bell()}
+            </button>
+          </div>
         </div>
 
         {/* Banners */}
@@ -182,6 +336,63 @@ export default function WalletDashboard() {
             <span className="tb-action__ic">{I.user({ width: 18, height: 18 })}</span>
             <span className="tb-action__lb">Profile</span>
           </button>
+        </div>
+
+        {/* Stats grid — Money in / Transactions / Top contact */}
+        <div className="tb-stats-grid">
+          <div className="tb-stat tb-stat--in">
+            <div className="tb-stat__head">
+              <span className="tb-stat__sticker" aria-hidden="true">💸</span>
+              <span className="tb-stat__label">Money in</span>
+            </div>
+            <div className="tb-stat__value">+PKR {formatPaisaSplit(stats.moneyIn)}</div>
+            <div className="tb-stat__sub">across {stats.inCount} transfer{stats.inCount === 1 ? '' : 's'}</div>
+            <button type="button" className="tb-stat__link" onClick={() => setActivityOpen(true)}>
+              View report {I.arrowRight({ width: 12, height: 12 })}
+            </button>
+          </div>
+
+          <div className="tb-stat tb-stat--out">
+            <div className="tb-stat__head">
+              <span className="tb-stat__sticker" aria-hidden="true">⚡</span>
+              <span className="tb-stat__label">Transactions</span>
+            </div>
+            <div className="tb-stat__value">{stats.txCount}</div>
+            <div className="tb-stat__sub">avg PKR {formatPaisaSplit(stats.avgPaisa)}</div>
+            <button type="button" className="tb-stat__link" onClick={() => setActivityOpen(true)}>
+              View report {I.arrowRight({ width: 12, height: 12 })}
+            </button>
+          </div>
+
+          <div className="tb-stat tb-stat--top">
+            <div className="tb-stat__head">
+              <span className="tb-stat__sticker" aria-hidden="true">🌟</span>
+              <span className="tb-stat__label">Top contact</span>
+            </div>
+            <div className="tb-stat__value tb-stat__value--text">
+              {stats.topContact || '—'}
+            </div>
+            <div className="tb-stat__sub">{stats.topContactCount} transfer{stats.topContactCount === 1 ? '' : 's'}</div>
+            <button type="button" className="tb-stat__link" onClick={() => setActivityOpen(true)}>
+              View report {I.arrowRight({ width: 12, height: 12 })}
+            </button>
+          </div>
+        </div>
+
+        {/* Activity chart */}
+        <div className="tb-list-card tb-chart-card">
+          <div className="tb-list-head">
+            <span>Last 7 days</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--tb-violet-deep)' }}>
+              {I.zap()} live
+            </span>
+          </div>
+          <Sparkline data={stats.days} />
+          <div className="tb-chart-labels">
+            {stats.days.map((d, i) => (
+              <span key={i}>{DAY_SHORT[d.date.getDay()]}</span>
+            ))}
+          </div>
         </div>
 
         {/* Activity */}
@@ -281,7 +492,81 @@ export default function WalletDashboard() {
           onClose={() => setActivityOpen(false)}
         />
       ) : null}
+
+      {helpOpen ? (
+        <HelpSheet onClose={() => setHelpOpen(false)} />
+      ) : null}
+
+      {/* Help & contact floating button */}
+      <button
+        type="button"
+        className="tb-help-fab"
+        onClick={() => setHelpOpen(true)}
+        title="Get help"
+      >
+        <span className="tb-help-fab__ic">?</span>
+        <span className="tb-help-fab__lb">Help &amp; contact</span>
+      </button>
     </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────
+// HelpSheet — support contact options
+// ────────────────────────────────────────────────────────────
+function HelpSheet({ onClose }) {
+  return (
+    <BottomSheet onClose={onClose} height="auto">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em' }}>
+            <span style={{ marginRight: 6 }}>💬</span> Help &amp; contact
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--tb-muted)', marginTop: 2 }}>
+            We usually reply within an hour.
+          </div>
+        </div>
+        <button type="button" className="tb-back" onClick={onClose} aria-label="Close">{I.close()}</button>
+      </div>
+
+      <div className="tb-list-card" style={{ marginBottom: 14, padding: 0 }}>
+        <a
+          href="mailto:support@timebank.app?subject=Timebank%20support%20request"
+          style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16, borderBottom: '1px solid var(--tb-line)', textDecoration: 'none', color: 'inherit' }}
+        >
+          <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--tb-violet-soft)', color: 'var(--tb-violet-deep)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {I.share({ width: 18, height: 18 })}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>Email support</div>
+            <div style={{ fontSize: 13, color: 'var(--tb-muted)' }}>support@timebank.app</div>
+          </div>
+          {I.arrowRight({ width: 16, height: 16 })}
+        </a>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16, borderBottom: '1px solid var(--tb-line)' }}>
+          <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(25, 192, 142, 0.12)', color: 'var(--tb-green-deep)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {I.shieldCheck({ width: 18, height: 18 })}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>Atomic ledger</div>
+            <div style={{ fontSize: 13, color: 'var(--tb-muted)' }}>Every transfer is locked &amp; idempotent.</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(246, 166, 35, 0.14)', color: '#b87108', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {I.zap()}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>~ 1 hour response</div>
+            <div style={{ fontSize: 13, color: 'var(--tb-muted)' }}>Mon–Sun, 9am to 9pm PKT</div>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" className="tb-btn tb-btn--ghost" onClick={onClose}>Close</button>
+    </BottomSheet>
   );
 }
 
