@@ -65,7 +65,7 @@ export default function ReceiveMoney() {
   const digits = walletCode.padEnd(4, '·').slice(0, 4).split('');
 
   return (
-    <div className="tb-screen">
+    <div className="tb-screen tb-screen--app tb-screen--flow">
       <div className="tb-status-spacer" />
       <div className="tb-app-bar">
         <Link to="/wallet" className="tb-back">{I.arrowLeft()}</Link>

@@ -39,7 +39,7 @@ export default function AuthPage({ type }) {
   }
 
   return (
-    <div className="tb-screen">
+    <div className="tb-screen tb-auth-screen">
       <div className="tb-status-spacer" />
 
       <div className="tb-app-bar">
@@ -51,7 +51,34 @@ export default function AuthPage({ type }) {
         <div style={{ width: 40 }} />
       </div>
 
-      <form onSubmit={handleSubmit} style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+      <div className="tb-auth-split">
+        {/* Desktop-only brand panel */}
+        <aside className="tb-auth-split__brand" style={{ display: 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <TBLogo size={36} monoLight />
+            <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em' }}>Timebank</span>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.7, fontWeight: 600 }}>
+              A wallet built around
+            </div>
+            <h2 style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, marginTop: 14 }}>
+              <span className="ital">four</span> digits.
+            </h2>
+            <p style={{ marginTop: 18, fontSize: 16, lineHeight: 1.55, color: 'rgba(255,255,255,0.78)', maxWidth: 380 }}>
+              Send, receive and split tabs in milliseconds. No account numbers — just a 4-digit code per wallet.
+            </p>
+
+            <div style={{ marginTop: 28, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <span className="tb-chip" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', borderColor: 'rgba(255,255,255,0.18)' }}>{I.zap()} Instant settlement</span>
+              <span className="tb-chip" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', borderColor: 'rgba(255,255,255,0.18)' }}>{I.shieldCheck({ width: 14, height: 14 })} Atomic ledger</span>
+              <span className="tb-chip" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', borderColor: 'rgba(255,255,255,0.18)' }}>{I.lock({ width: 14, height: 14 })} Idempotent</span>
+            </div>
+          </div>
+          <div style={{ fontSize: 12, opacity: 0.6 }}>© Timebank · Built for campus</div>
+        </aside>
+
+        <form onSubmit={handleSubmit} className="tb-auth-split__form" style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 22 }}>
 
         <div className="tb-tabs">
           <button type="button" className={tab === 'signup' ? 'on' : ''} onClick={() => switchTab('signup')}>Create wallet</button>
@@ -150,7 +177,8 @@ export default function AuthPage({ type }) {
           </button>
         </div>
 
-      </form>
+        </form>
+      </div>
 
       <div className="tb-home-spacer" />
     </div>
