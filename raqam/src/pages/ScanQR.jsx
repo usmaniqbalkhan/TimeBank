@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Button from '../components/Button';
 import { normalizeQrPayload, normalizeWalletCode } from '../lib/formatters';
-import './ScanQR.css';
+import { I } from '../lib/icons';
 
 export default function ScanQR() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [error, setError] = useState('');
+  const [status, setStatus] = useState('Requesting camera…');
   const [manualValue, setManualValue] = useState('');
-  const [status, setStatus] = useState('Requesting camera...');
+  const [manualOpen, setManualOpen] = useState(false);
 
   useEffect(() => {
     let scanTimer = null;
@@ -25,28 +25,25 @@ export default function ScanQR() {
         navigate(`/send?recipient=${walletCode}`, { replace: true });
         return;
       }
-
       if (qrToken) {
         navigate(`/send?qr=${encodeURIComponent(qrToken)}`, { replace: true });
         return;
       }
-
-      setError('This QR code is not a valid Raqam payment code.');
+      setError('This QR code is not a valid Timebank payment code.');
     }
 
     async function startScanner() {
       if (!globalThis.BarcodeDetector) {
         setStatus('QR scanning is not supported on this browser.');
         setError('Use the manual 4-digit code fallback below.');
+        setManualOpen(true);
         return;
       }
 
       try {
         const detector = new globalThis.BarcodeDetector({ formats: ['qr_code'] });
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-          },
+          video: { facingMode: { ideal: 'environment' } },
         });
 
         if (cancelled) {
@@ -55,33 +52,27 @@ export default function ScanQR() {
         }
 
         streamRef.current = stream;
-
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
 
-        setStatus('Point the camera at a Raqam QR code.');
+        setStatus('Align the Timebank QR');
 
         scanTimer = window.setInterval(async () => {
-          if (!videoRef.current || videoRef.current.readyState < 2) {
-            return;
-          }
-
+          if (!videoRef.current || videoRef.current.readyState < 2) return;
           try {
             const codes = await detector.detect(videoRef.current);
             const qrValue = codes?.[0]?.rawValue?.trim();
-
-            if (qrValue) {
-              await routeFromPayload(qrValue);
-            }
+            if (qrValue) await routeFromPayload(qrValue);
           } catch {
-            // Keep scanning while frames are still coming in.
+            // keep scanning
           }
         }, 450);
       } catch {
         setStatus('Camera access failed.');
         setError('Allow camera access or type the 4-digit code manually.');
+        setManualOpen(true);
       }
     }
 
@@ -89,60 +80,107 @@ export default function ScanQR() {
 
     return () => {
       cancelled = true;
-
-      if (scanTimer) {
-        window.clearInterval(scanTimer);
-      }
-
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
+      if (scanTimer) window.clearInterval(scanTimer);
+      if (streamRef.current) streamRef.current.getTracks().forEach((track) => track.stop());
     };
   }, [navigate]);
 
   function handleManualSubmit(event) {
     event.preventDefault();
-    const nextValue = normalizeWalletCode(manualValue);
-
-    if (nextValue.length !== 4) {
-      return;
-    }
-
-    navigate(`/send?recipient=${nextValue}`);
+    const next = normalizeWalletCode(manualValue);
+    if (next.length !== 4) return;
+    navigate(`/send?recipient=${next}`);
   }
 
   return (
-    <div className="scan-page page-container">
-      <header className="scan-header">
-        <Link to="/wallet" className="scan-back">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-        </Link>
-        <h2>Scan QR</h2>
-        <div style={{ width: 20 }}></div>
-      </header>
+    <div className="tb-screen" style={{ background: '#000', color: '#fff' }}>
+      <div className="tb-scan">
+        <video ref={videoRef} className="tb-scan__video" muted playsInline />
+      </div>
+      <div className="tb-scan__mask" />
 
-      <div className="scan-camera-shell">
-        <video ref={videoRef} className="scan-video" muted playsInline />
-        <div className="scan-frame" aria-hidden="true"></div>
+      <div className="tb-scan__reticle">
+        <div className="tb-scan__corner tl"><span className="h" /><span className="v" /></div>
+        <div className="tb-scan__corner tr"><span className="h" /><span className="v" /></div>
+        <div className="tb-scan__corner bl"><span className="h" /><span className="v" /></div>
+        <div className="tb-scan__corner br"><span className="h" /><span className="v" /></div>
+        <div className="tb-scan__line" />
       </div>
 
-      <p className="scan-status">{status}</p>
-      {error ? <p className="scan-error">{error}</p> : null}
+      <div style={{ position: 'relative', zIndex: 4, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div className="tb-status-spacer" />
+        <div className="tb-app-bar">
+          <Link to="/wallet" className="tb-back" style={{ background: 'rgba(255,255,255,0.16)', color: '#fff' }}>{I.close()}</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(255,255,255,0.12)', borderRadius: 999, backdropFilter: 'blur(10px)' }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--tb-violet-2)', boxShadow: '0 0 8px var(--tb-violet-2)' }} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Scanning…</span>
+          </div>
+          <button className="tb-back" onClick={() => setManualOpen((v) => !v)} style={{ background: 'rgba(255,255,255,0.16)', color: '#fff' }}>
+            {I.hash({ width: 18, height: 18 })}
+          </button>
+        </div>
 
-      <form className="scan-manual-form" onSubmit={handleManualSubmit}>
-        <label htmlFor="manual-wallet-code">Manual 4-digit code</label>
-        <input
-          id="manual-wallet-code"
-          type="text"
-          inputMode="numeric"
-          value={manualValue}
-          onChange={(event) => setManualValue(normalizeWalletCode(event.target.value))}
-          placeholder="0000"
-        />
-        <Button variant="primary" type="submit" disabled={manualValue.length !== 4}>
-          Use this code
-        </Button>
-      </form>
+        <div style={{ flex: 1 }} />
+
+        <div style={{ textAlign: 'center', padding: '20px 28px 0' }}>
+          <h3 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>{status}</h3>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', marginTop: 8, marginBottom: 0, lineHeight: 1.4 }}>
+            {error || 'Your camera will recognise the code automatically. The transfer screen opens with the amount preview.'}
+          </p>
+        </div>
+
+        {manualOpen ? (
+          <form onSubmit={handleManualSubmit} style={{ margin: '24px 22px 18px', padding: '14px 18px', borderRadius: 18, background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(111,63,245,0.25)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {I.hash({ width: 18, height: 18 })}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Enter 4-digit code</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Skip the camera</div>
+              </div>
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={manualValue}
+              onChange={(e) => setManualValue(normalizeWalletCode(e.target.value))}
+              placeholder="0000"
+              autoFocus
+              style={{
+                width: '100%', height: 48, borderRadius: 14, border: '1px solid rgba(255,255,255,0.16)',
+                background: 'rgba(255,255,255,0.06)', color: '#fff', padding: '0 16px',
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 20, letterSpacing: '0.2em',
+                textAlign: 'center', outline: 'none',
+              }}
+            />
+            <button
+              type="submit"
+              className="tb-btn tb-btn--violet"
+              style={{ marginTop: 10 }}
+              disabled={manualValue.length !== 4}
+            >
+              Use this code {I.arrowRight({ width: 16, height: 16 })}
+            </button>
+          </form>
+        ) : (
+          <div style={{ margin: '24px 22px 18px', padding: '14px 18px', borderRadius: 18, background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(111,63,245,0.25)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {I.hash({ width: 18, height: 18 })}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Don't have a QR?</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Enter the 4-digit code instead</div>
+              </div>
+              <button onClick={() => setManualOpen(true)} className="tb-back" style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.16)', color: '#fff' }}>
+                {I.arrowRight({ width: 16, height: 16 })}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="tb-home-spacer" />
     </div>
   );
 }

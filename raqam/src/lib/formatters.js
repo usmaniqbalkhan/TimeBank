@@ -59,5 +59,7 @@ export function normalizeWalletCode(value) {
 }
 
 export function normalizeQrPayload(payload = '') {
-  return payload.trim().replace(/^raqam:/i, '');
+  // Accept both the new timebank: prefix and legacy raqam: payloads
+  // already in circulation, so existing QRs keep working through the rename.
+  return payload.trim().replace(/^(timebank|raqam):/i, '');
 }

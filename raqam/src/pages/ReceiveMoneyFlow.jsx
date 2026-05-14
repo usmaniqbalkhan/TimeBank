@@ -5,7 +5,7 @@ import './ReceiveMoneyFlow.css';
 export default function ReceiveMoneyFlow() {
   const navigate = useNavigate();
   const studentCode = "4920";
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=raqam://pay?code=${studentCode}&margin=0`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=timebank://pay?code=${studentCode}&margin=0`;
 
   return (
     <div className="recv-flow">
@@ -38,7 +38,7 @@ export default function ReceiveMoneyFlow() {
 
       <div className="recv-bottom-action">
          <Button variant="primary" onClick={() => navigator.clipboard.writeText(studentCode)}>
-            Copy Raqam Code
+            Copy Timebank Code
          </Button>
       </div>
     </div>
