@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { formatTimestamp, getInitials } from '../lib/formatters';
@@ -18,6 +18,8 @@ export default function WalletDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const activityRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -55,7 +57,12 @@ export default function WalletDashboard() {
   const wallet = dashboard?.wallet;
   const recentTransactions = dashboard?.recent_transactions || [];
   const userName = dashboard?.profile?.name || profile?.name || 'Student';
+  const userEmail = dashboard?.profile?.email || profile?.email || '';
   const firstName = userName.split(' ')[0];
+
+  function scrollToActivity() {
+    activityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   return (
     <div className="tb-screen">
@@ -74,10 +81,8 @@ export default function WalletDashboard() {
               <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>{firstName}</div>
             </div>
           </div>
-          <button className="tb-back" onClick={handleLogout} disabled={loggingOut} title="Sign out">
-            {loggingOut
-              ? <span style={{ fontSize: 10 }}>…</span>
-              : I.bell()}
+          <button className="tb-back" type="button" title="Notifications" aria-label="Notifications">
+            {I.bell()}
           </button>
         </div>
 
@@ -131,14 +136,14 @@ export default function WalletDashboard() {
             <span className="tb-action__ic">{I.qr({ width: 18, height: 18 })}</span>
             <span className="tb-action__lb">Scan</span>
           </button>
-          <button className="tb-action" onClick={handleLogout} disabled={loggingOut}>
+          <button className="tb-action" onClick={() => setProfileOpen(true)}>
             <span className="tb-action__ic">{I.user({ width: 18, height: 18 })}</span>
-            <span className="tb-action__lb">{loggingOut ? '…' : 'Sign out'}</span>
+            <span className="tb-action__lb">Profile</span>
           </button>
         </div>
 
         {/* Activity */}
-        <div className="tb-list-card" style={{ flex: 1 }}>
+        <div ref={activityRef} className="tb-list-card" style={{ flex: 1 }}>
           <div className="tb-list-head">
             <span>Recent activity</span>
             <span style={{ color: 'var(--tb-muted)', fontSize: 11 }}>{recentTransactions.length} entries</span>
@@ -187,24 +192,98 @@ export default function WalletDashboard() {
 
       {/* Tab bar */}
       <div className="tb-tabbar">
-        <button className="tb-tabbar__item on">
+        <button className="tb-tabbar__item on" type="button">
           <span>{I.home({ width: 18, height: 18 })}</span>
           Wallet
         </button>
-        <button className="tb-tabbar__item" onClick={() => navigate('/receive')}>
+        <button className="tb-tabbar__item" type="button" onClick={scrollToActivity}>
           <span>{I.history({ width: 18, height: 18 })}</span>
           Activity
         </button>
-        <button className="tb-tabbar__item" onClick={() => navigate('/scan')}>
-          <span>{I.cards({ width: 18, height: 18 })}</span>
+        <button className="tb-tabbar__item" type="button" onClick={() => navigate('/scan')}>
+          <span>{I.qr({ width: 18, height: 18 })}</span>
           Scan
         </button>
-        <button className="tb-tabbar__item" onClick={handleLogout}>
+        <button className="tb-tabbar__item" type="button" onClick={() => setProfileOpen(true)}>
           <span>{I.user({ width: 18, height: 18 })}</span>
           You
         </button>
       </div>
       <div className="tb-home-spacer" />
+
+      {profileOpen ? (
+        <ProfileSheet
+          name={userName}
+          email={userEmail}
+          walletCode={wallet?.wallet_code}
+          loggingOut={loggingOut}
+          onClose={() => setProfileOpen(false)}
+          onLogout={handleLogout}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function ProfileSheet({ name, email, walletCode, loggingOut, onClose, onLogout }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100,
+        background: 'rgba(10,10,12,0.5)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        animation: 'tb-fade 200ms var(--tb-ease)',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 480,
+          background: 'var(--tb-paper)',
+          borderTopLeftRadius: 28, borderTopRightRadius: 28,
+          padding: '14px 22px 28px',
+          boxShadow: '0 -20px 40px -10px rgba(10,10,12,0.25)',
+          animation: 'tb-slide-up 280ms var(--tb-ease)',
+        }}
+      >
+        <style>{`@keyframes tb-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
+
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <div style={{ width: 38, height: 4, borderRadius: 2, background: 'var(--tb-line-strong)' }} />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+          <div className="tb-avatar tb-avatar--violet" style={{ width: 56, height: 56, flex: '0 0 56px', fontSize: 18 }}>
+            {getInitials(name) || 'TB'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+            <div style={{ fontSize: 13, color: 'var(--tb-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email || 'No email on file'}</div>
+          </div>
+        </div>
+
+        {walletCode ? (
+          <div className="tb-list-card" style={{ marginBottom: 14 }}>
+            <div className="tb-ledger" style={{ borderBottom: 0 }}>
+              <div className="tb-ledger__label">Wallet code</div>
+              <div />
+              <div className="tb-ledger__value mono" style={{ color: 'var(--tb-violet-deep)', fontSize: 16, letterSpacing: '0.1em' }}>
+                {walletCode}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button className="tb-btn tb-btn--ghost" type="button" onClick={onClose}>Close</button>
+          <button className="tb-btn" type="button" onClick={onLogout} disabled={loggingOut}
+            style={{ background: 'var(--tb-red)', color: '#fff' }}>
+            {loggingOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
