@@ -269,6 +269,10 @@ export default function WalletDashboard() {
             <span className="tb-wallet-sidebar__icon">{I.home({ width: 18, height: 18 })}</span>
             Home
           </button>
+          <button type="button" className="tb-wallet-sidebar__link" onClick={() => navigate('/payments')}>
+            <span className="tb-wallet-sidebar__icon">{I.cards({ width: 18, height: 18 })}</span>
+            Wallet
+          </button>
           <button type="button" className="tb-wallet-sidebar__link" onClick={() => setActivityOpen(true)}>
             <span className="tb-wallet-sidebar__icon">{I.history({ width: 18, height: 18 })}</span>
             Activity
@@ -426,9 +430,9 @@ export default function WalletDashboard() {
             <span className="tb-action__ic">{I.qr({ width: 18, height: 18 })}</span>
             <span className="tb-action__lb">Scan</span>
           </button>
-          <button className="tb-action" onClick={() => setProfileOpen(true)}>
-            <span className="tb-action__ic">{I.user({ width: 18, height: 18 })}</span>
-            <span className="tb-action__lb">Profile</span>
+          <button className="tb-action tb-action--featured" onClick={() => navigate('/payments')}>
+            <span className="tb-action__ic">{I.cards({ width: 18, height: 18 })}</span>
+            <span className="tb-action__lb">Wallet</span>
           </button>
         </div>
 

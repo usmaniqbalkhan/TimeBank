@@ -26,6 +26,7 @@ export default function DesktopNav() {
         {session ? (
           <nav className="tb-dnav__links">
             <NavLink to="/wallet" label="Home" />
+            <NavLink to="/payments" label="Wallet" />
             <NavLink to="/send" label="Send" />
             <NavLink to="/receive" label="Receive" />
             <NavLink to="/scan" label="Scan" />
