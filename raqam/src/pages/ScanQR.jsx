@@ -93,7 +93,7 @@ export default function ScanQR() {
   }
 
   return (
-    <div className="tb-screen" style={{ background: '#000', color: '#fff' }}>
+    <div className="tb-screen tb-screen--scan" style={{ background: '#000', color: '#fff' }}>
       <div className="tb-scan">
         <video ref={videoRef} className="tb-scan__video" muted playsInline />
       </div>

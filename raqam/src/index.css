@@ -765,3 +765,299 @@ input, textarea { font-family: inherit; }
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ============================================================
+   Desktop nav (hidden on mobile)
+   ============================================================ */
+.tb-dnav { display: none; }
+
+/* ============================================================
+   RESPONSIVE — desktop layout (>= 768px)
+   ============================================================ */
+@media (min-width: 768px) {
+  html, body {
+    background:
+      radial-gradient(circle at top left, rgba(111,63,245,0.06), transparent 40%),
+      radial-gradient(circle at bottom right, rgba(58,21,154,0.05), transparent 40%),
+      var(--tb-paper);
+  }
+
+  /* Drop the mobile-frame max-width and shadow on desktop */
+  #root {
+    max-width: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* Hide iOS-style chrome and the bottom mobile tab bar */
+  .tb-status-spacer,
+  .tb-home-spacer,
+  .tb-tabbar { display: none; }
+
+  /* Desktop nav bar */
+  .tb-dnav {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 32px;
+    background: rgba(246, 244, 239, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--tb-line);
+  }
+  .tb-dnav__brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--tb-ink);
+  }
+  .tb-dnav__links {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .tb-dnav__link {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tb-muted);
+    padding: 8px 14px;
+    border-radius: 10px;
+    transition: color 0.2s, background 0.2s;
+  }
+  .tb-dnav__link:hover { color: var(--tb-ink); background: rgba(10,10,12,0.04); }
+  .tb-dnav__link.on { color: var(--tb-violet-deep); background: var(--tb-violet-soft); }
+  .tb-dnav__avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--tb-violet-2), var(--tb-violet-deep));
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; letter-spacing: -0.02em;
+    margin-left: 8px;
+  }
+
+  /* App-shell pages: center content with breathing room */
+  .tb-screen.tb-screen--app {
+    background: transparent;
+  }
+  .tb-screen.tb-screen--app > div:not(.tb-app-bar):not(.tb-tabbar) {
+    max-width: 760px;
+    margin: 0 auto;
+    width: 100%;
+    padding-left: 40px !important;
+    padding-right: 40px !important;
+  }
+  .tb-screen--app .tb-app-bar {
+    max-width: 760px;
+    margin: 0 auto;
+    width: 100%;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  .tb-screen--app .tb-back {
+    /* keep back arrows but make them less iOS-y */
+    background: transparent;
+    border: 1px solid var(--tb-line-strong);
+  }
+
+  /* Send/Receive/Scan flows — narrower content card */
+  .tb-screen--flow > div:not(.tb-app-bar):not(.tb-tabbar) {
+    max-width: 600px !important;
+  }
+  .tb-screen--flow .tb-app-bar {
+    max-width: 600px;
+  }
+
+  /* Wallet dashboard: 2-column layout (balance/actions on left, activity on right) */
+  .tb-screen--wallet > div:not(.tb-app-bar):not(.tb-tabbar) {
+    max-width: 1100px !important;
+    padding-top: 32px !important;
+  }
+  .tb-screen--wallet .tb-wallet-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  .tb-screen--wallet .tb-wallet-grid > .tb-wallet-side {
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  /* Action grid: 4 cols still works but a bit more padding on desktop */
+  .tb-screen--wallet .tb-action {
+    padding: 18px 8px 16px;
+  }
+
+  /* Landing — full desktop hero */
+  .tb-landing-screen {
+    background: transparent !important;
+  }
+  .tb-landing-hero {
+    display: grid !important;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 60px;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 40px 80px;
+  }
+  .tb-landing-hero h1 {
+    font-size: 76px !important;
+    text-align: left !important;
+    line-height: 0.96 !important;
+  }
+  .tb-landing-hero__sub {
+    text-align: left !important;
+    max-width: 520px !important;
+    font-size: 18px !important;
+    margin-top: 22px !important;
+    padding: 0 !important;
+  }
+  .tb-landing-cta-row {
+    display: flex !important;
+    gap: 12px !important;
+    align-items: center !important;
+    flex-direction: row !important;
+    margin-top: 32px !important;
+  }
+  .tb-landing-cta-row .tb-btn {
+    width: auto !important;
+    padding: 0 28px;
+  }
+  .tb-landing-cta-row > p { display: none; }
+  /* Hide the mobile centered logo on desktop, show it inside hero column */
+  .tb-landing-screen .tb-landing-mobile-logo { display: none; }
+  .tb-landing-screen .tb-landing-mobile-brand { display: none; }
+  .tb-landing-hero__visual {
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .tb-landing-hero__phone {
+    width: 320px;
+    height: 640px;
+    border-radius: 44px;
+    background: linear-gradient(155deg, #1f0a52 0%, #3b1599 50%, #6f3ff5 100%);
+    box-shadow: 0 40px 80px -20px rgba(58,21,154,0.45), 0 0 0 8px #0a0a0c;
+    position: relative;
+    overflow: hidden;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+  }
+  .tb-landing-hero__phone::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.06) 0.6px, transparent 0.6px);
+    background-size: 16px 16px;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  .tb-landing-features {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 40px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .tb-landing-feature {
+    background: #fff;
+    border: 1px solid var(--tb-line);
+    border-radius: 22px;
+    padding: 26px;
+  }
+  .tb-landing-feature__ic {
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    background: var(--tb-violet-soft);
+    color: var(--tb-violet-deep);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .tb-landing-feature h3 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .tb-landing-feature p {
+    color: var(--tb-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Auth — split screen */
+  .tb-auth-screen { background: transparent !important; }
+  .tb-auth-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: calc(100vh - 65px); /* minus the desktop nav */
+    max-width: 1200px;
+    margin: 0 auto;
+    border-radius: 28px;
+    overflow: hidden;
+    margin-top: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 24px 50px -16px rgba(10,10,12,0.18);
+  }
+  .tb-auth-split__brand {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 60px 50px;
+    background: linear-gradient(155deg, #1f0a52 0%, #3b1599 50%, #6f3ff5 100%);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .tb-auth-split__brand::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.06) 0.6px, transparent 0.6px);
+    background-size: 16px 16px;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  .tb-auth-split__brand > * { position: relative; z-index: 2; }
+  .tb-auth-split__form {
+    background: #fff;
+    padding: 48px 56px !important;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Hide the mobile-only AuthPage app bar on desktop (back button etc.) */
+  .tb-auth-screen .tb-app-bar { display: none; }
+
+  /* Bottom-sheet modals: cap width on desktop */
+  .tb-screen + div[onclick] > div,
+  .tb-screen > div[onclick] > div { max-width: 480px !important; }
+
+  /* Scan screen — center it as a phone-sized viewport on desktop */
+  .tb-screen.tb-screen--scan {
+    max-width: 460px !important;
+    height: 800px;
+    min-height: 0;
+    margin: 32px auto !important;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 24px 50px -16px rgba(10,10,12,0.45);
+  }
+}
+
+/* On mobile (< 768px), if a page uses the desktop-specific landing classes
+   we still want the original mobile flow, so override grid back to flex. */
+@media (max-width: 767px) {
+  .tb-landing-hero { display: contents; }
+  .tb-landing-hero__visual { display: none; }
+  .tb-landing-features { display: none; }
+  .tb-auth-split { display: contents; }
+  .tb-auth-split__brand { display: none !important; }
+}
+

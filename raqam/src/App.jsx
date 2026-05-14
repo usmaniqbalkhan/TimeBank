@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
+import DesktopNav from './components/DesktopNav';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import WalletDashboard from './pages/WalletDashboard';
@@ -11,6 +12,7 @@ import ScanQR from './pages/ScanQR';
 function App() {
   return (
     <BrowserRouter>
+      <DesktopNav />
       <Routes>
         <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
         <Route path="/login" element={<PublicRoute><AuthPage type="login" /></PublicRoute>} />

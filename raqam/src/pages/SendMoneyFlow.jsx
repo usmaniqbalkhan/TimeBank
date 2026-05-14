@@ -152,7 +152,7 @@ export default function SendMoneyFlow() {
   // ────────────────────────────────────────────────────────────
   if (step === STEPS.METHOD) {
     return (
-      <div className="tb-screen">
+      <div className="tb-screen tb-screen--app tb-screen--flow">
         <div className="tb-status-spacer" />
         <div className="tb-app-bar">
           <button className="tb-back" onClick={handleBack}>{I.arrowLeft()}</button>
@@ -236,7 +236,7 @@ export default function SendMoneyFlow() {
     }
 
     return (
-      <div className="tb-screen">
+      <div className="tb-screen tb-screen--app tb-screen--flow">
         <div className="tb-status-spacer" />
         <div className="tb-app-bar">
           <button className="tb-back" onClick={handleBack}>{I.arrowLeft()}</button>
@@ -301,7 +301,7 @@ export default function SendMoneyFlow() {
     const variant = avatarVariantFor(recipient?.wallet_code || walletCode);
 
     return (
-      <div className="tb-screen">
+      <div className="tb-screen tb-screen--app tb-screen--flow">
         <div className="tb-status-spacer" />
         <div className="tb-app-bar">
           <button className="tb-back" onClick={handleBack}>{I.arrowLeft()}</button>
@@ -413,7 +413,7 @@ export default function SendMoneyFlow() {
     const paisa = toPaisa(amount);
 
     return (
-      <div className="tb-screen">
+      <div className="tb-screen tb-screen--app tb-screen--flow">
         <div className="tb-status-spacer" />
         <div className="tb-app-bar">
           <button className="tb-back" onClick={handleBack}>{I.arrowLeft()}</button>
@@ -494,7 +494,7 @@ export default function SendMoneyFlow() {
   // ────────────────────────────────────────────────────────────
   const paisa = toPaisa(amount);
   return (
-    <div className="tb-screen" style={{ background: 'linear-gradient(180deg, #f6f4ef 0%, #ece5ff 100%)' }}>
+    <div className="tb-screen tb-screen--app tb-screen--flow" style={{ background: 'linear-gradient(180deg, #f6f4ef 0%, #ece5ff 100%)' }}>
       <div className="tb-status-spacer" />
 
       <div style={{ position: 'absolute', top: 100, left: '50%', transform: 'translateX(-50%)',

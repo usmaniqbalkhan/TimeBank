@@ -63,7 +63,7 @@ export default function WalletDashboard() {
 
 
   return (
-    <div className="tb-screen">
+    <div className="tb-screen tb-screen--app tb-screen--wallet">
       <div className="tb-status-spacer" />
 
       <div style={{ flex: 1, padding: '8px 18px 0', display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
