@@ -66,7 +66,51 @@ export default function WalletDashboard() {
     <div className="tb-screen tb-screen--app tb-screen--wallet">
       <div className="tb-status-spacer" />
 
-      <div style={{ flex: 1, padding: '8px 18px 0', display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
+      <div className="tb-wallet-grid">
+
+        {/* Desktop-only sidebar (hidden on mobile via CSS) */}
+        <aside className="tb-wallet-sidebar">
+          <div className="tb-wallet-sidebar__head">
+            <div className="tb-wallet-sidebar__greeting">Welcome back</div>
+            <div className="tb-wallet-sidebar__name">{firstName}</div>
+          </div>
+          <button type="button" className="tb-wallet-sidebar__link on">
+            <span className="tb-wallet-sidebar__icon">{I.home({ width: 18, height: 18 })}</span>
+            Home
+          </button>
+          <button type="button" className="tb-wallet-sidebar__link" onClick={() => setActivityOpen(true)}>
+            <span className="tb-wallet-sidebar__icon">{I.history({ width: 18, height: 18 })}</span>
+            Activity
+          </button>
+          <button type="button" className="tb-wallet-sidebar__link" onClick={() => navigate('/send')}>
+            <span className="tb-wallet-sidebar__icon">{I.arrowUp()}</span>
+            Send money
+          </button>
+          <button type="button" className="tb-wallet-sidebar__link" onClick={() => navigate('/receive')}>
+            <span className="tb-wallet-sidebar__icon">{I.arrowDown()}</span>
+            Receive
+          </button>
+          <button type="button" className="tb-wallet-sidebar__link" onClick={() => navigate('/scan')}>
+            <span className="tb-wallet-sidebar__icon">{I.qr({ width: 18, height: 18 })}</span>
+            Scan QR
+          </button>
+          <div className="tb-wallet-sidebar__divider" />
+          <button type="button" className="tb-wallet-sidebar__link" onClick={() => setNotifOpen(true)}>
+            <span className="tb-wallet-sidebar__icon">{I.bell()}</span>
+            Notifications
+          </button>
+          <button type="button" className="tb-wallet-sidebar__link" onClick={() => setProfileOpen(true)}>
+            <span className="tb-wallet-sidebar__icon">{I.user({ width: 18, height: 18 })}</span>
+            Profile
+          </button>
+          <div className="tb-wallet-sidebar__divider" />
+          <button type="button" className="tb-wallet-sidebar__link danger" onClick={handleLogout} disabled={loggingOut}>
+            <span className="tb-wallet-sidebar__icon">{I.lock({ width: 18, height: 18 })}</span>
+            {loggingOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </aside>
+
+        <main className="tb-wallet-main" style={{ flex: 1, padding: '8px 18px 0', display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
 
         {/* Top bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 2px' }}>
@@ -188,6 +232,7 @@ export default function WalletDashboard() {
           })}
         </div>
 
+        </main>
       </div>
 
       {/* Tab bar */}
