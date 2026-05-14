@@ -1,6 +1,7 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const SESSION_STORAGE_KEY = 'raqam.session';
+const SESSION_STORAGE_KEY = 'timebank.session';
+const LEGACY_SESSION_STORAGE_KEY = 'raqam.session';
 
 function hasNavigator() {
   return typeof navigator !== 'undefined';
@@ -121,6 +122,13 @@ function unwrapSingle(payload) {
 }
 
 export function getStoredSession() {
+  // Migrate any legacy raqam.session into timebank.session on first read.
+  const legacy = localStorage.getItem(LEGACY_SESSION_STORAGE_KEY);
+  if (legacy && !localStorage.getItem(SESSION_STORAGE_KEY)) {
+    localStorage.setItem(SESSION_STORAGE_KEY, legacy);
+    localStorage.removeItem(LEGACY_SESSION_STORAGE_KEY);
+  }
+
   const rawSession = localStorage.getItem(SESSION_STORAGE_KEY);
 
   if (!rawSession) {

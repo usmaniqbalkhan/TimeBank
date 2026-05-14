@@ -1,16 +1,41 @@
-# React + Vite
+# Timebank
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A campus wallet built around **4-digit codes**. Send, receive and split tabs in milliseconds.
 
-Currently, two official plugins are available:
+Built with **React 19 + Vite 8 + Supabase**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Local dev
 
-## React Compiler
+```bash
+cp .env.example .env       # add your Supabase keys
+npm install
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Stack
 
-## Expanding the ESLint configuration
+- React 19 + React Router 7
+- Vite 8 build
+- Supabase (Postgres + Auth + RLS) — schema in `supabase/migrations/`
+- BarcodeDetector API for live QR scanning
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Design system
+
+The UI uses a custom Timebank design system in `src/index.css`:
+
+- **Palette** — violet primary (`#6f3ff5`), cream paper (`#f6f4ef`), coal ink (`#0a0a0c`)
+- **Type** — Plus Jakarta Sans (display), Instrument Serif (accent italic), JetBrains Mono (codes)
+- **Components** — `.tb-balance`, `.tb-action`, `.tb-tabs`, `.tb-digit`, `.tb-numpad`, `.tb-recip`, `.tb-qr`, `.tb-slide` …
+
+Icons are line-style 24×24 SVGs in `src/lib/icons.jsx` exposed as `I.arrowRight`, `I.shieldCheck`, etc.
+
+## Routes
+
+| Path | Screen |
+| --- | --- |
+| `/` | Welcome landing |
+| `/signup`, `/login` | Auth (tabbed) |
+| `/wallet` | Dashboard with balance + activity |
+| `/send` | Method → Code → Amount → Confirm → Success wizard |
+| `/receive` | QR + 4-digit code share |
+| `/scan` | Camera scanner with manual fallback |
