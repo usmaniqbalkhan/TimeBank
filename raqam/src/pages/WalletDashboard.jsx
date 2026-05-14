@@ -206,9 +206,7 @@ export default function WalletDashboard() {
   const [error, setError] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [activityOpen, setActivityOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
+  const activityRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -249,9 +247,9 @@ export default function WalletDashboard() {
   const userEmail = dashboard?.profile?.email || profile?.email || '';
   const firstName = userName.split(' ')[0];
 
-  const stats = computeOverview(recentTransactions);
-  const greet = timeOfDayGreeting();
-
+  function scrollToActivity() {
+    activityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   return (
     <div className="tb-screen tb-screen--app tb-screen--wallet">
@@ -511,7 +509,7 @@ export default function WalletDashboard() {
         </div>
 
         {/* Activity */}
-        <div className="tb-list-card" style={{ flex: 1 }}>
+        <div ref={activityRef} className="tb-list-card" style={{ flex: 1 }}>
           <div className="tb-list-head">
             <span>Recent activity</span>
             <button type="button" onClick={() => setActivityOpen(true)} style={{ color: 'var(--tb-violet-deep)', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em' }}>
@@ -592,36 +590,69 @@ export default function WalletDashboard() {
           onLogout={handleLogout}
         />
       ) : null}
+    </div>
+  );
+}
 
-      {notifOpen ? (
-        <NotificationsSheet
-          transactions={recentTransactions}
-          onClose={() => setNotifOpen(false)}
-        />
-      ) : null}
-
-      {activityOpen ? (
-        <ActivitySheet
-          transactions={recentTransactions}
-          loading={loading}
-          onClose={() => setActivityOpen(false)}
-        />
-      ) : null}
-
-      {helpOpen ? (
-        <HelpSheet onClose={() => setHelpOpen(false)} />
-      ) : null}
-
-      {/* Help & contact floating button */}
-      <button
-        type="button"
-        className="tb-help-fab"
-        onClick={() => setHelpOpen(true)}
-        title="Get help"
+function ProfileSheet({ name, email, walletCode, loggingOut, onClose, onLogout }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100,
+        background: 'rgba(10,10,12,0.5)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        animation: 'tb-fade 200ms var(--tb-ease)',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 480,
+          background: 'var(--tb-paper)',
+          borderTopLeftRadius: 28, borderTopRightRadius: 28,
+          padding: '14px 22px 28px',
+          boxShadow: '0 -20px 40px -10px rgba(10,10,12,0.25)',
+          animation: 'tb-slide-up 280ms var(--tb-ease)',
+        }}
       >
-        <span className="tb-help-fab__ic">?</span>
-        <span className="tb-help-fab__lb">Help &amp; contact</span>
-      </button>
+        <style>{`@keyframes tb-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
+
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <div style={{ width: 38, height: 4, borderRadius: 2, background: 'var(--tb-line-strong)' }} />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+          <div className="tb-avatar tb-avatar--violet" style={{ width: 56, height: 56, flex: '0 0 56px', fontSize: 18 }}>
+            {getInitials(name) || 'TB'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+            <div style={{ fontSize: 13, color: 'var(--tb-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email || 'No email on file'}</div>
+          </div>
+        </div>
+
+        {walletCode ? (
+          <div className="tb-list-card" style={{ marginBottom: 14 }}>
+            <div className="tb-ledger" style={{ borderBottom: 0 }}>
+              <div className="tb-ledger__label">Wallet code</div>
+              <div />
+              <div className="tb-ledger__value mono" style={{ color: 'var(--tb-violet-deep)', fontSize: 16, letterSpacing: '0.1em' }}>
+                {walletCode}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button className="tb-btn tb-btn--ghost" type="button" onClick={onClose}>Close</button>
+          <button className="tb-btn" type="button" onClick={onLogout} disabled={loggingOut}
+            style={{ background: 'var(--tb-red)', color: '#fff' }}>
+            {loggingOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
