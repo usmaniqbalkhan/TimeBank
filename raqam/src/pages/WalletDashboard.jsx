@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { formatTimestamp, getInitials } from '../lib/formatters';
 import { fetchWalletDashboard } from '../lib/supabase';
-import { I } from '../lib/icons';
+import { TBLogo, I } from '../lib/icons';
 
 function formatPaisaSplit(paisa) {
   const rupees = Math.round(Number(paisa || 0) / 100);
@@ -269,10 +269,6 @@ export default function WalletDashboard() {
             <span className="tb-wallet-sidebar__icon">{I.home({ width: 18, height: 18 })}</span>
             Home
           </button>
-          <button type="button" className="tb-wallet-sidebar__link" onClick={() => navigate('/payments')}>
-            <span className="tb-wallet-sidebar__icon">{I.cards({ width: 18, height: 18 })}</span>
-            Wallet
-          </button>
           <button type="button" className="tb-wallet-sidebar__link" onClick={() => setActivityOpen(true)}>
             <span className="tb-wallet-sidebar__icon">{I.history({ width: 18, height: 18 })}</span>
             Activity
@@ -390,29 +386,49 @@ export default function WalletDashboard() {
 
         {/* Balance card */}
         <div className="tb-balance">
-          <div className="tb-balance__label">Available balance</div>
-          <div className="tb-balance__amt">
-            <span className="curr">PKR</span>
-            {wallet ? formatPaisaSplit(wallet.balance_paisa) : '—'}
-            <span className="frac">.00</span>
-          </div>
-          <div className="tb-balance__row">
-            <div className="tb-code-pill">
+          <div className="tb-balance__top">
+            <div className="tb-balance__head">
+              <div className="tb-balance__logo">
+                <TBLogo size={28} monoLight />
+              </div>
+              <div className="tb-balance__headtext">
+                <div className="tb-balance__label">Timebank balance</div>
+                <div className="tb-balance__amt">
+                  <span className="curr">PKR</span>
+                  {wallet ? formatPaisaSplit(wallet.balance_paisa) : '—'}
+                  <span className="frac">.00</span>
+                </div>
+                <div className="tb-balance__sub">Available · Live</div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="tb-balance__code"
+              onClick={() => wallet?.wallet_code && navigator.clipboard?.writeText(wallet.wallet_code)}
+              title="Copy code"
+            >
               <span className="dot" />
-              Code · <span className="mono" style={{ letterSpacing: '0.05em' }}>{wallet?.wallet_code || '....'}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button
-                className="tb-balance__icon-btn"
-                onClick={() => wallet?.wallet_code && navigator.clipboard?.writeText(wallet.wallet_code)}
-                title="Copy code"
-              >
-                {I.copy({ width: 14, height: 14 })}
-              </button>
-              <Link to="/receive" className="tb-balance__icon-btn">
-                {I.qr({ width: 14, height: 14 })}
-              </Link>
-            </div>
+              Code · <span className="mono">{wallet?.wallet_code || '....'}</span>
+              {I.copy({ width: 12, height: 12, style: { opacity: 0.7 } })}
+            </button>
+          </div>
+
+          <div className="tb-balance__actions">
+            <button
+              type="button"
+              className="tb-balance__pill tb-balance__pill--light"
+              onClick={() => navigate('/send')}
+            >
+              Transfer funds
+            </button>
+            <button
+              type="button"
+              className="tb-balance__pill tb-balance__pill--violet"
+              onClick={() => navigate('/receive')}
+            >
+              Receive
+            </button>
           </div>
         </div>
 
@@ -430,9 +446,9 @@ export default function WalletDashboard() {
             <span className="tb-action__ic">{I.qr({ width: 18, height: 18 })}</span>
             <span className="tb-action__lb">Scan</span>
           </button>
-          <button className="tb-action tb-action--featured" onClick={() => navigate('/payments')}>
-            <span className="tb-action__ic">{I.cards({ width: 18, height: 18 })}</span>
-            <span className="tb-action__lb">Wallet</span>
+          <button className="tb-action" onClick={() => setProfileOpen(true)}>
+            <span className="tb-action__ic">{I.user({ width: 18, height: 18 })}</span>
+            <span className="tb-action__lb">Profile</span>
           </button>
         </div>
 
